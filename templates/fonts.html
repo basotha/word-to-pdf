@@ -15,16 +15,19 @@
         .nav-bar { text-align: center; margin-bottom: 30px; }
         .nav-bar a { text-decoration: none; color: #007bff; font-weight: bold; margin: 0 15px; }
         
-        /* Đăng ký font động bằng CSS từ danh sách Flask trả về */
+        /* Đăng ký font động - Đã thêm dấu nháy đơn bọc quanh tên font */
+        {% if fonts %}
         {% for font in fonts %}
         @font-face {
             font-family: '{{ font.name }}';
-            src: url('/static/fonts/{{ font.filename }}');
+            /* Dùng thêm toán tử | replace để đổi khoảng trắng thành %20 nếu đường dẫn url bị lỗi */
+            src: url('/static/fonts/{{ font.filename | replace(" ", "%20") }}') format('truetype');
         }
-        .preview-{{ font.name }} {
-            font-family: '{{ font.name }}';
+        .preview-{{ font.name | replace(" ", "-") | replace(".", "-") }} {
+            font-family: '{{ font.name }}', Arial, sans-serif;
         }
         {% endfor %}
+        {% endif %}
 
         /* Khung chứa các font */
         .font-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
@@ -63,8 +66,9 @@
                 <!-- Thẻ tiêu đề chứa tên Font (SEO cực thích điều này) -->
                 <div class="font-title">Font: {{ font.name }}</div>
                 <!-- Dòng chữ này sẽ tự đổi kiểu dáng theo chính Font đó -->
-                <div class="font-preview preview-{{ font.name }}">
-                    Cộng Hòa Xã Hội Chủ Nghĩa Việt Nam
+                <!-- Dưới phần thẻ Card hiển thị -->
+                <div class="font-preview preview-{{ font.name | replace(" ", "-") | replace(".", "-") }}">
+                Cộng Hòa Xã Hội Chủ Nghĩa Việt Nam
                 </div>
             </div>
             <!-- Bấm phát tải trực tiếp file ttf/woff về máy luôn -->
