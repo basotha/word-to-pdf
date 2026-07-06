@@ -58,7 +58,28 @@ def download_file(folder_id, filename):
     if os.path.exists(file_path):
         return send_file(file_path, as_attachment=True, download_name=filename)
     return "File không tồn tại hoặc đã bị xóa!", 404
+# Đường dẫn đến thư mục chứa font
+FONT_DIR = os.path.join('static', 'fonts')
 
+@app.route("/fonts", methods=["GET"])
+def fonts_page():
+    font_list = []
+    
+    # Tự động quét thư mục static/fonts nếu nó tồn tại
+    if os.path.exists(FONT_DIR):
+        for filename in os.listdir(FONT_DIR):
+            if filename.lower().endswith(('.ttf', '.woff', '.woff2', '.otf')):
+                # Lấy tên font bỏ phần đuôi mở rộng để làm hiển thị (Ví dụ: UTM-Alessio)
+                font_name = os.path.splitext(filename)[0]
+                font_list.append({
+                    "name": font_name,
+                    "filename": filename
+                })
+                
+    # Sắp xếp tên font theo thứ tự bảng chữ cái A-Z cho đẹp
+    font_list.sort(key=lambda x: x["name"])
+    
+    return render_template("fonts.html", fonts=font_list)
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
