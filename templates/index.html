@@ -13,6 +13,12 @@
         .btn:hover { background: #e03b3b; }
         .ads-container { margin: 20px 0; background: #eee; padding: 10px; min-height: 90px; }
 
+        /* Thanh điều hướng Menu đầu trang */
+        .nav-bar { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; }
+        .nav-link { text-decoration: none; color: #555; padding: 8px 16px; font-weight: bold; border-radius: 4px; background: #eee; transition: 0.2s; }
+        .nav-link.active { background: #ff4b4b; color: white; }
+        .nav-link:hover:not(.active) { background: #ddd; }
+
         /* Hiệu ứng loading xoay tròn */
         .loader-container { display: none; margin: 20px 0; }
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #ff4b4b; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
@@ -30,6 +36,12 @@
     <div class="ads-container">
         <p style="color: #999; font-size: 12px; margin: 0;">Quảng cáo đầu trang</p>
         <!-- Dán mã quảng cáo Google AdSense vào đây -->
+    </div>
+
+    <!-- THANH MENU CHUYỂN TRANG LIÊN KẾT -->
+    <div class="nav-bar">
+        <a href="/" class="nav-link active">📄 Chuyển Word Sang PDF</a>
+        <a href="/fonts" class="nav-link">✨ Kho Font Chữ Đẹp</a>
     </div>
 
     <h1>📄 Chuyển Đổi Word Sang PDF</h1>
