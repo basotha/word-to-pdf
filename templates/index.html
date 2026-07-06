@@ -9,8 +9,19 @@
     <style>
         body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; text-align: center; }
         .upload-box { border: 2px dashed #ccc; padding: 30px; border-radius: 10px; background: #f9f9f9; cursor: pointer; }
-        .btn { background: #ff4b4b; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+        .btn { background: #ff4b4b; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px; font-weight: bold; width: 100%; max-width: 250px; }
+        .btn:hover { background: #e03b3b; }
         .ads-container { margin: 20px 0; background: #eee; padding: 10px; min-height: 90px; }
+
+        /* Hiệu ứng loading xoay tròn */
+        .loader-container { display: none; margin: 20px 0; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #ff4b4b; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Khu vực hiển thị nút tải về sau khi thành công */
+        .result-container { display: none; background: #d4edda; color: #155724; padding: 15px; border-radius: 8px; border: 1px solid #c3e6cb; margin-top: 20px; }
+        .btn-download { background: #28a745; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; display: inline-block; margin-top: 10px; font-weight: bold; }
+        .btn-download:hover { background: #218838; }
     </style>
 </head>
 <body>
@@ -24,19 +35,79 @@
     <h1>📄 Chuyển Đổi Word Sang PDF</h1>
     <p>Hệ thống Flask bảo mật, nhanh chóng, không lo lưu lại tài liệu.</p>
 
-    <form method="POST" enctype="multipart/form-data">
+    <!-- Thêm id="uploadForm" để JavaScript bắt sự kiện xử lý ngầm -->
+    <form id="uploadForm" enctype="multipart/form-data">
         <div class="upload-box">
-            <input type="file" name="word_files" accept=".docx" required><br><br>
+            <!-- Đổi name và thêm id để js dễ nhận diện dữ liệu -->
+            <input type="file" id="wordFile" name="word_file" accept=".docx" required><br><br>
             <p>Chọn hoặc kéo thả file .docx vào đây</p>
         </div>
-        <button type="submit" class="btn">🚀 Bắt Đầu Chuyển Đổi & Tải Về</button>
+        <button type="submit" class="btn" id="submitBtn">🚀 Bắt Đầu Chuyển Đổi</button>
     </form>
+
+    <!-- Trạng thái chờ xử lý (Mặc định ẩn) -->
+    <div class="loader-container" id="loaderContainer">
+        <div class="loader"></div>
+        <p style="color: #555;">Đang xử lý dữ liệu, vui lòng đợi trong giây lát...</p>
+    </div>
+
+    <!-- Nút bấm tải về sau khi chuyển đổi xong (Mặc định ẩn) -->
+    <div class="result-container" id="resultContainer">
+        <p style="margin: 0; font-weight: bold;">🎉 Chuyển đổi thành công!</p>
+        <p id="pdfName" style="margin: 5px 0; font-size: 14px; color: #333;"></p>
+        <a href="#" id="downloadLink" class="btn-download">📥 Tải File PDF Về Máy</a>
+    </div>
 
     <!-- 2. QUẢNG CÁO CUỐI TRANG -->
     <div class="ads-container" style="margin-top: 50px;">
         <p style="color: #999; font-size: 12px; margin: 0;">Quảng cáo cuối trang</p>
         <!-- Dán mã quảng cáo Google AdSense vào đây -->
     </div>
+
+    <!-- Xử lý hiệu ứng giao diện mượt mà bằng JavaScript Fetch API -->
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            e.preventDefault(); 
+            
+            const fileInput = document.getElementById('wordFile');
+            if (fileInput.files.length === 0) return;
+
+            const formData = new FormData();
+            formData.append('word_file', fileInput.files[0]);
+
+            // Trạng thái khi bắt đầu bấm nút: Ẩn nút cũ, ẩn kết quả cũ, hiện hiệu ứng quay quay
+            document.getElementById('submitBtn').style.display = 'none';
+            document.getElementById('resultContainer').style.display = 'none';
+            document.getElementById('loaderContainer').style.display = 'block';
+
+            // Gửi request lên route xử lý '/convert' của Flask
+            fetch('/convert', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Tắt trạng thái chờ, hiện lại nút bấm ban đầu
+                document.getElementById('loaderContainer').style.display = 'none';
+                document.getElementById('submitBtn').style.display = 'inline-block';
+
+                if (data.success) {
+                    // Cấu hình thông tin file và link tải vào nút bấm màu xanh lá
+                    document.getElementById('pdfName').innerText = data.filename;
+                    document.getElementById('downloadLink').href = data.download_url;
+                    document.getElementById('resultContainer').style.display = 'block';
+                } else {
+                    alert("Có lỗi xảy ra: " + data.error);
+                }
+            })
+            .catch(error => {
+                document.getElementById('loaderContainer').style.display = 'none';
+                document.getElementById('submitBtn').style.display = 'inline-block';
+                alert("Lỗi kết nối đến hệ thống máy chủ!");
+                console.error(error);
+            });
+        });
+    </script>
 
 </body>
 </html>
