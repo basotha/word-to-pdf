@@ -1,69 +1,64 @@
-from flask import Flask, render_template, request, send_file, flash, redirect
+from flask import Flask, render_template, request, jsonify, send_file, url_for
 import os
 import subprocess
 import uuid
 
 app = Flask(__name__)
-app.secret_key = "secret_key_cho_session_flask"
 
-UPLOAD_FOLDER = "/tmp/flask_uploads" if os.name != 'nt' else "C:/tmp/flask_uploads"
+# Thư mục lưu file tạm thời trên server Render
+UPLOAD_FOLDER = "/tmp/flask_uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 def find_libreoffice():
-    """Tự động tìm đường dẫn LibreOffice trên Linux"""
-    possible_paths = [
-        "/usr/bin/libreoffice", "/usr/bin/soffice",
-        "/usr/lib/libreoffice/program/soffice"
-    ]
+    possible_paths = ["/usr/bin/libreoffice", "/usr/bin/soffice", "/usr/lib/libreoffice/program/soffice"]
     for path in possible_paths:
         if os.path.exists(path): return path
-    return "libreoffice" # Giả định hệ thống nhận lệnh global
+    return "libreoffice"
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=["GET"])
 def index():
-    if request.method == "POST":
-        # Kiểm tra xem người dùng có upload file lên không
-        if "word_files" not in request.files:
-            flash("Không tìm thấy file nào được gửi lên!")
-            return redirect(request.url)
-            
-        files = request.files.getlist("word_files")
-        
-        # Ở bản Flask đơn giản này, ta xử lý chuyển đổi file đầu tiên thành công
-        # (Bạn có thể nâng cấp gộp zip nếu người dùng up nhiều file)
-        for file in files:
-            if file.filename == "": continue
-            if file and file.filename.endswith(".docx"):
-                # Tạo thư mục tạm riêng cho lượt xử lý này
-                session_dir = os.path.join(UPLOAD_FOLDER, uuid.uuid4().hex)
-                os.makedirs(session_dir, exist_ok=True)
-                
-                # Lưu file Word tạm
-                word_path = os.path.join(session_dir, file.filename)
-                file.save(word_path)
-                
-                # Tiến hành chuyển đổi
-                if os.name == 'nt':  # Windows
-                    from docx2pdf import convert
-                    pdf_name = file.filename.replace(".docx", ".pdf")
-                    pdf_path = os.path.join(session_dir, pdf_name)
-                    convert(word_path, pdf_path)
-                else:  # Linux (Hugging Face / Docker)
-                    libreoffice_bin = find_libreoffice()
-                    cmd = [libreoffice_bin, "--headless", "--convert-to", "pdf", "--outdir", session_dir, word_path]
-                    subprocess.run(cmd, check=True)
-                    pdf_name = file.filename.replace(".docx", ".pdf")
-                    pdf_path = os.path.join(session_dir, pdf_name)
-                
-                # Trả file PDF về thẳng trình duyệt của người dùng để tải xuống
-                return send_file(pdf_path, as_attachment=True, download_name=pdf_name)
-                
-        flash("Vui lòng chọn đúng file định dạng .docx")
-        return redirect(request.url)
-        
     return render_template("index.html")
 
+# Cổng xử lý chuyển đổi (Trả về dữ liệu JSON chứa link tải thay vì tải trực tiếp)
+@app.route("/convert", methods=["POST"])
+def convert():
+    if "word_file" not in request.files:
+        return jsonify({"success": False, "error": "Không tìm thấy file!"}), 400
+        
+    file = request.files["word_file"]
+    if file.filename == "":
+        return jsonify({"success": False, "error": "Tên file trống!"}), 400
+
+    if file and file.filename.endswith(".docx"):
+        # Tạo thư mục độc nhất cho lượt tải này
+        folder_id = uuid.uuid4().hex
+        session_dir = os.path.join(UPLOAD_FOLDER, folder_id)
+        os.makedirs(session_dir, exist_ok=True)
+        
+        word_path = os.path.join(session_dir, file.filename)
+        file.save(word_path)
+        
+        # Chuyển đổi bằng LibreOffice
+        libreoffice_bin = find_libreoffice()
+        cmd = [libreoffice_bin, "--headless", "--convert-to", "pdf", "--outdir", session_dir, word_path]
+        subprocess.run(cmd, check=True)
+        
+        pdf_name = file.filename.replace(".docx", ".pdf")
+        
+        # Trả về đường dẫn link để JavaScript kích hoạt nút bấm
+        download_url = url_for('download_file', folder_id=folder_id, filename=pdf_name)
+        return jsonify({"success": True, "download_url": download_url, "filename": pdf_name})
+
+    return jsonify({"success": False, "error": "Định dạng file không hợp lệ!"}), 400
+
+# Cổng phục vụ nút bấm tải file về
+@app.route("/download/<folder_id>/<filename>", methods=["GET"])
+def download_file(folder_id, filename):
+    file_path = os.path.join(UPLOAD_FOLDER, folder_id, filename)
+    if os.path.exists(file_path):
+        return send_file(file_path, as_attachment=True, download_name=filename)
+    return "File không tồn tại hoặc đã bị xóa!", 404
+
 if __name__ == "__main__":
-    # Lấy cổng từ biến môi trường của Render, nếu không có thì mặc định là 10000 hoặc 5000
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
