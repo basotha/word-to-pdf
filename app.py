@@ -1,69 +1,68 @@
-import streamlit as st
+from flask import Flask, render_template, request, send_file, flash, redirect
 import os
-import uuid
 import subprocess
+import uuid
 
-# Cấu hình trang web
-st.set_page_config(page_title="Chuyển đổi Word sang PDF", page_icon="📄", layout="centered")
+app = Flask(__name__)
+app.secret_key = "secret_key_cho_session_flask"
 
-st.title("📄 Tool Chuyển Đổi Word Sang PDF Online")
-st.write("Tải file `.docx` của bạn lên và hệ thống sẽ tự động chuyển đổi sang `.pdf`.")
-st.write("---")
+UPLOAD_FOLDER = "/tmp/flask_uploads" if os.name != 'nt' else "C:/tmp/flask_uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-def convert_to_pdf(input_path, output_dir):
-    """Hàm chuyển đổi linh hoạt giữa Windows (docx2pdf) và Linux (LibreOffice)"""
-    if os.name == 'nt':  # Nếu là Windows (Chạy ở máy cá nhân của bạn)
-        from docx2pdf import convert
-        # Xác định tên file đầu ra cụ thể cho Windows
-        pdf_name = os.path.basename(input_path).replace(".docx", ".pdf")
-        convert(input_path, os.path.join(output_dir, pdf_name))
-    else:  # Nếu là Linux (Chạy trên Server Streamlit Cloud)
-        # Sử dụng LibreOffice được cài sẵn trên server để chuyển đổi
-        cmd = ["libreoffice", "--headless", "--convert-to", "pdf", "--outdir", output_dir, input_path]
-        subprocess.run(cmd, check=True)
+def find_libreoffice():
+    """Tự động tìm đường dẫn LibreOffice trên Linux"""
+    possible_paths = [
+        "/usr/bin/libreoffice", "/usr/bin/soffice",
+        "/usr/lib/libreoffice/program/soffice"
+    ]
+    for path in possible_paths:
+        if os.path.exists(path): return path
+    return "libreoffice" # Giả định hệ thống nhận lệnh global
 
-# Khu vực kéo thả file
-uploaded_files = st.file_uploader("Kéo và thả các file Word (.docx) vào đây:", type=["docx"], accept_multiple_files=True)
-
-if uploaded_files:
-    st.write(f"📂 Đã chọn **{len(uploaded_files)}** file.")
-    
-    if st.button("🚀 Bắt đầu chuyển đổi", type="primary"):
-        temp_dir = f"temp_{uuid.uuid4().hex}"
-        os.makedirs(temp_dir, exist_ok=True)
+@app.route("/", methods=["GET", "POST"])
+def index():
+    if request.method == "POST":
+        # Kiểm tra xem người dùng có upload file lên không
+        if "word_files" not in request.files:
+            flash("Không tìm thấy file nào được gửi lên!")
+            return redirect(request.url)
+            
+        files = request.files.getlist("word_files")
         
-        for index, uploaded_file in enumerate(uploaded_files, start=1):
-            with st.spinner(f"Đang xử lý file [{index}/{len(uploaded_files)}]: {uploaded_file.name}..."):
-                try:
-                    # 1. Lưu file Word tạm
-                    input_word_path = os.path.join(temp_dir, uploaded_file.name)
-                    with open(input_word_path, "wb") as f:
-                        f.write(uploaded_file.getbuffer())
-                    
-                    # 2. Gọi hàm chuyển đổi
-                    convert_to_pdf(input_word_path, temp_dir)
-                    
-                    # 3. Đọc file PDF đầu ra
-                    output_pdf_name = uploaded_file.name.replace(".docx", ".pdf")
-                    output_pdf_path = os.path.join(temp_dir, output_pdf_name)
-                    
-                    with open(output_pdf_path, "rb") as pdf_file:
-                        pdf_data = pdf_file.read()
-                    
-                    # 4. Trả file cho người dùng tải về
-                    st.success(f"✓ Đã chuyển đổi xong: {uploaded_file.name}")
-                    st.download_button(
-                        label=f"📥 Tải về file: {output_pdf_name}",
-                        data=pdf_data,
-                        file_name=output_pdf_name,
-                        mime="application/pdf",
-                        key=f"download_{index}"
-                    )
-                    
-                except Exception as e:
-                    st.error(f"❌ Lỗi khi xử lý file {uploaded_file.name}: {e}")
-                finally:
-                    if os.path.exists(input_word_path):
-                        os.remove(input_word_path)
+        # Ở bản Flask đơn giản này, ta xử lý chuyển đổi file đầu tiên thành công
+        # (Bạn có thể nâng cấp gộp zip nếu người dùng up nhiều file)
+        for file in files:
+            if file.filename == "": continue
+            if file and file.filename.endswith(".docx"):
+                # Tạo thư mục tạm riêng cho lượt xử lý này
+                session_dir = os.path.join(UPLOAD_FOLDER, uuid.uuid4().hex)
+                os.makedirs(session_dir, exist_ok=True)
+                
+                # Lưu file Word tạm
+                word_path = os.path.join(session_dir, file.filename)
+                file.save(word_path)
+                
+                # Tiến hành chuyển đổi
+                if os.name == 'nt':  # Windows
+                    from docx2pdf import convert
+                    pdf_name = file.filename.replace(".docx", ".pdf")
+                    pdf_path = os.path.join(session_dir, pdf_name)
+                    convert(word_path, pdf_path)
+                else:  # Linux (Hugging Face / Docker)
+                    libreoffice_bin = find_libreoffice()
+                    cmd = [libreoffice_bin, "--headless", "--convert-to", "pdf", "--outdir", session_dir, word_path]
+                    subprocess.run(cmd, check=True)
+                    pdf_name = file.filename.replace(".docx", ".pdf")
+                    pdf_path = os.path.join(session_dir, pdf_name)
+                
+                # Trả file PDF về thẳng trình duyệt của người dùng để tải xuống
+                return send_file(pdf_path, as_attachment=True, download_name=pdf_name)
+                
+        flash("Vui lòng chọn đúng file định dạng .docx")
+        return redirect(request.url)
         
-        st.balloons()
+    return render_template("index.html")
+
+if __name__ == "__main__":
+    # Hugging Face yêu cầu chạy cổng 7860
+    app.run(host="0.0.0.0", port=7860, debug=True)
