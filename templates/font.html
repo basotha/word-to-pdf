@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kho Tải Font Chữ Việt Hóa Đẹp Miễn Phí</title>
+    <meta name="description" content="Tải font chữ Việt hóa, font UTM, VNI, font thư pháp, font học đường miễn phí. Xem trước kiểu dáng font trực quan ngay trên trình duyệt.">
+    
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 30px auto; padding: 20px; color: #333; background-fcolor: #fafafa; }
+        h1 { text-align: center; color: #ff4b4b; margin-bottom: 5px; }
+        .sub-title { text-align: center; color: #666; margin-bottom: 30px; }
+        
+        /* Menu điều hướng đơn giản */
+        .nav-bar { text-align: center; margin-bottom: 30px; }
+        .nav-bar a { text-decoration: none; color: #007bff; font-weight: bold; margin: 0 15px; }
+        
+        /* Đăng ký font động bằng CSS từ danh sách Flask trả về */
+        {% for font in fonts %}
+        @font-face {
+            font-family: '{{ font.name }}';
+            src: url('/static/fonts/{{ font.filename }}');
+        }
+        .preview-{{ font.name }} {
+            font-family: '{{ font.name }}';
+        }
+        {% endfor %}
+
+        /* Khung chứa các font */
+        .font-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .font-card { background: white; border: 1px solid #ddd; padding: 20px; border-radius: 8px; text-align: left; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between; }
+        .font-title { font-size: 14px; color: #888; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 15px; font-family: Arial, sans-serif !important; }
+        
+        /* Đoạn chữ hiển thị mẫu */
+        .font-preview { font-size: 28px; margin: 15px 0; min-height: 50px; line-height: 1.3; color: #111; word-break: break-word; }
+        
+        /* Nút tải về */
+        .btn-download { background: #ff4b4b; color: white; text-decoration: none; padding: 8px 15px; border-radius: 4px; display: inline-block; font-size: 14px; font-weight: bold; text-align: center; transition: 0.2s; }
+        .btn-download:hover { background: #e03b3b; }
+        
+        .ads-container { margin: 20px 0; background: #eee; padding: 10px; min-height: 90px; text-align: center; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+    <div class="ads-container">
+        <p style="color: #999; font-size: 12px; margin: 0;">Quảng cáo đầu trang</p>
+    </div>
+
+    <div class="nav-bar">
+        <a href="/">📄 Chuyển Word Sang PDF</a> | 
+        <a href="/fonts" style="color: #ff4b4b;">✨ Kho Font Chữ Đẹp</a>
+    </div>
+
+    <h1>✨ Kho Font Chữ Việt Hóa Miễn Phí</h1>
+    <p class="sub-title">Xem trước kiểu dáng trực quan và tải về file gốc tốc độ cao</p>
+
+    <!-- Danh sách Font tự động hiển thị dạng lưới -->
+    <div class="font-grid">
+        {% for font in fonts %}
+        <div class="font-card">
+            <div>
+                <!-- Thẻ tiêu đề chứa tên Font (SEO cực thích điều này) -->
+                <div class="font-title">Font: {{ font.name }}</div>
+                <!-- Dòng chữ này sẽ tự đổi kiểu dáng theo chính Font đó -->
+                <div class="font-preview preview-{{ font.name }}">
+                    Cộng Hòa Xã Hội Chủ Nghĩa Việt Nam
+                </div>
+            </div>
+            <!-- Bấm phát tải trực tiếp file ttf/woff về máy luôn -->
+            <a href="/static/fonts/{{ font.filename }}" class="btn-download" download>📥 Tải Font Về Máy</a>
+        </div>
+        {% else %}
+        <p style="grid-column: 1/-1; text-align: center; color: #999;">Chưa có file font nào trong thư mục static/fonts/</p>
+        {% endfor %}
+    </div>
+
+    <div class="ads-container" style="margin-top: 50px;">
+        <p style="color: #999; font-size: 12px; margin: 0;">Quảng cáo cuối trang</p>
+    </div>
+
+</body>
+</html>
