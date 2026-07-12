@@ -62,9 +62,15 @@ def api_word_to_pdf():
 @app.route("/api/tach-pdf", methods=["POST"])
 def api_tach_pdf():
     file = request.files.get("pdf_file")
-    trang_tach = request.form.get("pages") # Ví dụ người dùng gõ: 1,2,3 hoặc 1-5
+    pages_str = request.form.get("pages", "").strip() # Lấy chuỗi nhập, ví dụ: "1,3, 5-8"
     
-    if file and file.filename.endswith(".pdf"):
+    if not file or not file.filename.endswith(".pdf"):
+        return jsonify({"success": False, "error": "Định dạng file không hợp lệ!"}), 400
+        
+    if not pages_str:
+        return jsonify({"success": False, "error": "Vui lòng nhập số trang cần tách!"}), 400
+
+    try:
         folder_id = uuid.uuid4().hex
         session_dir = os.path.join(UPLOAD_FOLDER, folder_id)
         os.makedirs(session_dir, exist_ok=True)
@@ -72,22 +78,49 @@ def api_tach_pdf():
         pdf_path = os.path.join(session_dir, file.filename)
         file.save(pdf_path)
         
-        # Đọc và tách trang bằng pypdf
         reader = PdfReader(pdf_path)
+        total_pages = len(reader.pages)
         writer = PdfWriter()
         
-        # Logic đơn giản: Tách lấy trang đầu tiên làm mẫu (bạn có thể tối ưu chuỗi nhập sau)
-        writer.add_page(reader.pages[0]) 
+        # --- Giải mã chuỗi số trang (Ví dụ: "1, 2, 5-7" -> [0, 1, 4, 5, 6]) ---
+        selected_pages = set()
+        # Chia theo dấu phẩy trước
+        for part in pages_str.split(','):
+            part = part.strip()
+            if '-' in part: # Nếu có dấu gạch ngang (khoảng trang)
+                start, end = part.split('-')
+                start_idx = int(start.strip()) - 1
+                end_idx = int(end.strip()) - 1
+                # Giới hạn an toàn trong phạm vi file PDF thực tế
+                for p in range(max(0, start_idx), min(total_pages, end_idx + 1)):
+                    selected_pages.add(p)
+            else: # Nếu là trang đơn lẻ
+                if part.isdigit():
+                    idx = int(part) - 1
+                    if 0 <= idx < total_pages:
+                        selected_pages.add(idx)
+
+        # Chuyển thành list đã sắp xếp thứ tự từ nhỏ đến lớn
+        pages_to_extract = sorted(list(selected_pages))
+
+        if not pages_to_extract:
+            return jsonify({"success": False, "error": "Số trang bạn nhập không nằm trong phạm vi của file PDF!"}), 400
+
+        # Tiến hành trích xuất các trang đã chọn và đóng gói
+        for page_num in pages_to_extract:
+            writer.add_page(reader.pages[page_num])
         
-        output_name = "tachdangky_" + file.filename
+        output_name = f"extracted_{file.filename}"
         output_path = os.path.join(session_dir, output_name)
         with open(output_path, "wb") as f:
             writer.write(f)
             
         download_url = url_for('download_file', folder_id=folder_id, filename=output_name)
         return jsonify({"success": True, "download_url": download_url, "filename": output_name})
-    return jsonify({"success": False, "error": "Xử lý thất bại!"}), 400
 
+    except Exception as e:
+        print(f"Lỗi tách PDF: {str(e)}")
+        return jsonify({"success": False, "error": "Có lỗi xảy ra trong quá trình xử lý file!"}), 500
 # API: Hợp nhất PDF (Cực nhẹ)
 @app.route("/api/gop-pdf", methods=["POST"])
 def api_gop_pdf():
