@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gộp file PDF Trực Tuyến - Miễn Phí</title>
+    <title>Hợp Nhất PDF Trực Tuyến - Gộp Nhiều File Cực Nhanh</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; text-align: center; }
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; text-align: center; background: #fafafa; }
         .upload-box { border: 2px dashed #ccc; padding: 30px; border-radius: 10px; background: #f9f9f9; cursor: pointer; }
-        .btn { background: #ff4b4b; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px; font-weight: bold; width: 100%; max-width: 250px; }
+        .btn { background: #ff4b4b; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; max-width: 250px; font-size: 16px; margin-top: 20px; }
         .btn:hover { background: #e03b3b; }
         .ads-container { margin: 20px 0; background: #eee; padding: 10px; min-height: 90px; }
         .back-home { display: inline-block; margin-bottom: 20px; color: #ff4b4b; text-decoration: none; font-weight: bold; }
@@ -17,6 +17,11 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .result-container { display: none; background: #d4edda; color: #155724; padding: 15px; border-radius: 8px; border: 1px solid #c3e6cb; margin-top: 20px; }
         .btn-download { background: #28a745; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; display: inline-block; margin-top: 10px; font-weight: bold; }
+        
+        /* Hiển thị danh sách file đã chọn */
+        .file-list { text-align: left; margin-top: 15px; font-size: 14px; color: #555; background: #fff; border-radius: 5px; padding: 0 10px; }
+        .file-item { padding: 8px 0; border-bottom: 1px solid #eee; }
+        .file-item:last-child { border-bottom: none; }
     </style>
 </head>
 <body>
@@ -27,26 +32,29 @@
 
     <a href="/" class="back-home">⬅️ Quay lại Trang chủ Công cụ</a>
 
-    <h1>🧩 Công cụ gộp file PDF</h1>
-    <p>Hệ thống bảo mật, xử lý nhanh từ file .pdf của bạn.</p>
+    <h1>🧩 Hợp nhất các file PDF</h1>
+    <p>Chọn từ 2 file PDF trở lên để nối chúng lại thành một tài liệu duy nhất theo thứ tự.</p>
 
     <form id="uploadForm" enctype="multipart/form-data">
         <div class="upload-box">
-            <input type="file" id="pdfFile" name="pdf_file" accept=".pdf" required><br><br>
-            <p>Chọn hoặc kéo thả file .pdf vào đây</p>
+            <input type="file" id="pdfFiles" name="pdf_files" accept=".pdf" multiple required><br><br>
+            <p>Nhấn để chọn hoặc kéo thả nhiều file .pdf vào đây</p>
         </div>
-        <button type="submit" class="btn" id="submitBtn">🚀 Bắt Đầu Tách File</button>
+
+        <div class="file-list" id="fileList"></div>
+
+        <button type="submit" class="btn" id="submitBtn">🚀 Bắt Đầu Hợp Nhất</button>
     </form>
 
     <div class="loader-container" id="loaderContainer">
         <div class="loader"></div>
-        <p style="color: #555;">Đang xử lý tách dữ liệu...</p>
+        <p style="color: #555;">Hệ thống đang nối và đóng gói các file PDF...</p>
     </div>
 
     <div class="result-container" id="resultContainer">
-        <p style="margin: 0; font-weight: bold;">🎉 Thành công!</p>
-        <p id="pdfName" style="margin: 5px 0; font-size: 14px;"></p>
-        <a href="#" id="downloadLink" class="btn-download">📥 Tải File PDF Đã Tách</a>
+        <p style="margin: 0; font-weight: bold;">🎉 Hợp nhất thành công!</p>
+        <p id="pdfName" style="margin: 5px 0; font-size: 14px; color: #333;"></p>
+        <a href="#" id="downloadLink" class="btn-download">📥 Tải File PDF Tổng Về Máy</a>
     </div>
 
     <div class="ads-container" style="margin-top: 50px;">
@@ -54,11 +62,35 @@
     </div>
 
     <script>
+        // Hiển thị danh sách tên file khi người dùng chọn xong
+        document.getElementById('pdfFiles').addEventListener('change', function() {
+            const fileListContainer = document.getElementById('fileList');
+            fileListContainer.html = '';
+            
+            if (this.files.length > 0) {
+                for (let i = 0; i < this.files.length; i++) {
+                    const item = document.createElement('div');
+                    item.className = 'file-item';
+                    item.innerText = `📄 Thứ tự ${i + 1}: ${this.files[i].name}`;
+                    fileListContainer.appendChild(item);
+                }
+            }
+        });
+
         document.getElementById('uploadForm').addEventListener('submit', function(e) {
             e.preventDefault(); 
+            
+            const fileInput = document.getElementById('pdfFiles');
+            if (fileInput.files.length < 2) {
+                alert("Vui lòng chọn từ 2 file PDF trở lên để hợp nhất!");
+                return;
+            }
+
             const formData = new FormData();
-            // ĐÃ ĐỔI: Nhận đúng key 'pdf_file' đồng bộ với Flask API
-            formData.append('pdf_file', document.getElementById('pdfFile').files[0]);
+            // Đóng gói toàn bộ các file đã chọn vào formData
+            for (let i = 0; i < fileInput.files.length; i++) {
+                formData.append('pdf_files', fileInput.files[i]);
+            }
 
             document.getElementById('submitBtn').style.display = 'none';
             document.getElementById('resultContainer').style.display = 'none';
@@ -73,7 +105,14 @@
                     document.getElementById('pdfName').innerText = data.filename;
                     document.getElementById('downloadLink').href = data.download_url;
                     document.getElementById('resultContainer').style.display = 'block';
-                } else { alert("Lỗi: " + data.error); }
+                } else { 
+                    alert("Thất bại: " + data.error); 
+                }
+            })
+            .catch(err => {
+                document.getElementById('loaderContainer').style.display = 'none';
+                document.getElementById('submitBtn').style.display = 'inline-block';
+                alert("Lỗi kết nối máy chủ!");
             });
         });
     </script>
