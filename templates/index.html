@@ -3,123 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tool Chuyển Word Sang PDF Miễn Phí</title>
-    <!-- GẮN MÃ GOOGLE ADSENSE VÀO ĐÂY NẾU CÓ -->
-    <!-- <script async src="https://pagead2.googlesyndication.com/..."></script> -->
+    <title>Ứng dụng PDF trực tuyến miễn phí - 123PDF</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; text-align: center; }
-        .upload-box { border: 2px dashed #ccc; padding: 30px; border-radius: 10px; background: #f9f9f9; cursor: pointer; }
-        .btn { background: #ff4b4b; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px; font-weight: bold; width: 100%; max-width: 250px; }
-        .btn:hover { background: #e03b3b; }
-        .ads-container { margin: 20px 0; background: #eee; padding: 10px; min-height: 90px; }
-
-        /* Thanh điều hướng Menu đầu trang */
-        .nav-bar { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; }
-        .nav-link { text-decoration: none; color: #555; padding: 8px 16px; font-weight: bold; border-radius: 4px; background: #eee; transition: 0.2s; }
-        .nav-link.active { background: #ff4b4b; color: white; }
-        .nav-link:hover:not(.active) { background: #ddd; }
-
-        /* Hiệu ứng loading xoay tròn */
-        .loader-container { display: none; margin: 20px 0; }
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #ff4b4b; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* Khu vực hiển thị nút tải về sau khi thành công */
-        .result-container { display: none; background: #d4edda; color: #155724; padding: 15px; border-radius: 8px; border: 1px solid #c3e6cb; margin-top: 20px; }
-        .btn-download { background: #28a745; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; display: inline-block; margin-top: 10px; font-weight: bold; }
-        .btn-download:hover { background: #218838; }
+        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; text-align: center; background: #fafafa; color: #333; }
+        .ads-container { margin: 20px 0; background: #eee; padding: 10px; min-height: 90px; border-radius: 5px; }
+        
+        h1 { color: #ff4b4b; margin-bottom: 5px; }
+        .sub-title { color: #666; margin-bottom: 40px; }
+        
+        /* Cấu trúc lưới chứa các Card công cụ giống 123apps */
+        .tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+        .tool-card { background: white; border: 1px solid #e1e1e1; padding: 25px 15px; border-radius: 8px; text-decoration: none; color: #333; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: 0.2s; display: block; }
+        .tool-card:hover { transform: translateY(-5px); border-color: #ff4b4b; box-shadow: 0 5px 15px rgba(255,75,75,0.1); }
+        .tool-icon { font-size: 40px; margin-bottom: 15px; }
+        .tool-name { font-weight: bold; font-size: 16px; margin-bottom: 8px; color: #111; }
+        .tool-desc { font-size: 13px; color: #777; line-height: 1.4; }
     </style>
 </head>
 <body>
 
-    <!-- 1. QUẢNG CÁO ĐẦU TRANG -->
     <div class="ads-container">
         <p style="color: #999; font-size: 12px; margin: 0;">Quảng cáo đầu trang</p>
-        <!-- Dán mã quảng cáo Google AdSense vào đây -->
     </div>
 
-    <!-- THANH MENU CHUYỂN TRANG LIÊN KẾT -->
-    <div class="nav-bar">
-        <a href="/" class="nav-link active">📄 Chuyển Word Sang PDF</a>
-        <a href="/fonts" class="nav-link">✨ Kho Font Chữ Đẹp</a>
-    </div>
+    <h1>🛠️ Ứng Dụng PDF Trực Tuyến Miễn Phí</h1>
+    <p class="sub-title">Đầy đủ các công cụ tiện ích giúp bạn xử lý file PDF nhanh chóng, bảo mật ngay trên trình duyệt.</p>
 
-    <h1>📄 Chuyển Đổi Word Sang PDF</h1>
-    <p>Hệ thống Flask bảo mật, nhanh chóng, không lo lưu lại tài liệu.</p>
+    <!-- HỆ THỐNG LƯỚI ĐIỀU HƯỚNG BÀI BẢN -->
+    <div class="tools-grid">
+        
+        <a href="/tool/word-to-pdf" class="tool-card">
+            <div class="tool-icon">📄</div>
+            <div class="tool-name">Word sang PDF</div>
+            <div class="tool-desc">Chuyển đổi tài liệu .docx sang file PDF giữ nguyên định dạng.</div>
+        </a>
 
-    <!-- Thêm id="uploadForm" để JavaScript bắt sự kiện xử lý ngầm -->
-    <form id="uploadForm" enctype="multipart/form-data">
-        <div class="upload-box">
-            <!-- Đổi name và thêm id để js dễ nhận diện dữ liệu -->
-            <input type="file" id="wordFile" name="word_file" accept=".docx" required><br><br>
-            <p>Chọn hoặc kéo thả file .docx vào đây</p>
+        <a href="/tool/tach-pdf" class="tool-card">
+            <div class="tool-icon">✂️</div>
+            <div class="tool-name">Tách file PDF</div>
+            <div class="tool-desc">Trích xuất một hoặc nhiều trang từ file PDF của bạn một cách dễ dàng.</div>
+        </a>
+
+        <a href="/tool/gop-pdf" class="tool-card">
+            <div class="tool-icon">🧩</div>
+            <div class="tool-name">Hợp nhất PDF</div>
+            <div class="tool-desc">Gộp nhiều file PDF lẻ tẻ lại thành một tài liệu duy nhất.</div>
+        </a>
+
+        <!-- CÁC THẺ CHỜ (Bạn chỉ cần thêm href khi code xong backend cho chúng) -->
+        <div class="tool-card" style="opacity: 0.6; cursor: not-allowed;">
+            <div class="tool-icon">📉</div>
+            <div class="tool-name">Nén file PDF</div>
+            <div class="tool-desc">Sắp mắt - Giảm tối đa dung lượng file PDF nhưng giữ nguyên độ nét.</div>
         </div>
-        <button type="submit" class="btn" id="submitBtn">🚀 Bắt Đầu Chuyển Đổi</button>
-    </form>
 
-    <!-- Trạng thái chờ xử lý (Mặc định ẩn) -->
-    <div class="loader-container" id="loaderContainer">
-        <div class="loader"></div>
-        <p style="color: #555;">Đang xử lý dữ liệu, vui lòng đợi trong giây lát...</p>
+        <div class="tool-card" style="opacity: 0.6; cursor: not-allowed;">
+            <div class="tool-icon">🔓</div>
+            <div class="tool-name">Bỏ bảo vệ PDF</div>
+            <div class="tool-desc">Sắp mắt - Gỡ bỏ mật khẩu bảo mật mã hóa khỏi file PDF của bạn.</div>
+        </div>
+
+        <div class="tool-card" style="opacity: 0.6; cursor: not-allowed;">
+            <div class="tool-icon">🔒</div>
+            <div class="tool-name">Bảo vệ PDF</div>
+            <div class="tool-desc">Sắp mắt - Đặt mật khẩu mã hóa an toàn cho tập tin tài liệu PDF.</div>
+        </div>
+
     </div>
 
-    <!-- Nút bấm tải về sau khi chuyển đổi xong (Mặc định ẩn) -->
-    <div class="result-container" id="resultContainer">
-        <p style="margin: 0; font-weight: bold;">🎉 Chuyển đổi thành công!</p>
-        <p id="pdfName" style="margin: 5px 0; font-size: 14px; color: #333;"></p>
-        <a href="#" id="downloadLink" class="btn-download">📥 Tải File PDF Về Máy</a>
-    </div>
-
-    <!-- 2. QUẢNG CÁO CUỐI TRANG -->
     <div class="ads-container" style="margin-top: 50px;">
         <p style="color: #999; font-size: 12px; margin: 0;">Quảng cáo cuối trang</p>
-        <!-- Dán mã quảng cáo Google AdSense vào đây -->
     </div>
-
-    <!-- Xử lý hiệu ứng giao diện mượt mà bằng JavaScript Fetch API -->
-    <script>
-        document.getElementById('uploadForm').addEventListener('submit', function(e) {
-            e.preventDefault(); 
-            
-            const fileInput = document.getElementById('wordFile');
-            if (fileInput.files.length === 0) return;
-
-            const formData = new FormData();
-            formData.append('word_file', fileInput.files[0]);
-
-            // Trạng thái khi bắt đầu bấm nút: Ẩn nút cũ, ẩn kết quả cũ, hiện hiệu ứng quay quay
-            document.getElementById('submitBtn').style.display = 'none';
-            document.getElementById('resultContainer').style.display = 'none';
-            document.getElementById('loaderContainer').style.display = 'block';
-
-            // Gửi request lên route xử lý '/convert' của Flask
-            fetch('/convert', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Tắt trạng thái chờ, hiện lại nút bấm ban đầu
-                document.getElementById('loaderContainer').style.display = 'none';
-                document.getElementById('submitBtn').style.display = 'inline-block';
-
-                if (data.success) {
-                    // Cấu hình thông tin file và link tải vào nút bấm màu xanh lá
-                    document.getElementById('pdfName').innerText = data.filename;
-                    document.getElementById('downloadLink').href = data.download_url;
-                    document.getElementById('resultContainer').style.display = 'block';
-                } else {
-                    alert("Có lỗi xảy ra: " + data.error);
-                }
-            })
-            .catch(error => {
-                document.getElementById('loaderContainer').style.display = 'none';
-                document.getElementById('submitBtn').style.display = 'inline-block';
-                alert("Lỗi kết nối đến hệ thống máy chủ!");
-                console.error(error);
-            });
-        });
-    </script>
 
 </body>
 </html>
