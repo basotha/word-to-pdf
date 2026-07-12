@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Công cụ gộp file PDF Trực Tuyến - Miễn Phí</title>
+    <title>Gộp file PDF Trực Tuyến - Miễn Phí</title>
     <style>
         body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; text-align: center; }
         .upload-box { border: 2px dashed #ccc; padding: 30px; border-radius: 10px; background: #f9f9f9; cursor: pointer; }
@@ -27,26 +27,26 @@
 
     <a href="/" class="back-home">⬅️ Quay lại Trang chủ Công cụ</a>
 
-    <h1>📄 Công cụ gộp file PDF</h1>
-    <p>Hệ thống bảo mật, gộp file nhanh từ file .pdf của bạn.</p>
+    <h1>✂️ Công cụ gộp file PDF</h1>
+    <p>Hệ thống bảo mật, xử lý nhanh từ file .pdf của bạn.</p>
 
     <form id="uploadForm" enctype="multipart/form-data">
         <div class="upload-box">
-            <input type="file" id="wordFile" name="word_file" accept=".docx" required><br><br>
+            <input type="file" id="pdfFile" name="pdf_file" accept=".pdf" required><br><br>
             <p>Chọn hoặc kéo thả file .pdf vào đây</p>
         </div>
-        <button type="submit" class="btn" id="submitBtn">🚀 Bắt Đầu Chuyển Đổi</button>
+        <button type="submit" class="btn" id="submitBtn">🚀 Bắt Đầu Tách File</button>
     </form>
 
     <div class="loader-container" id="loaderContainer">
         <div class="loader"></div>
-        <p style="color: #555;">Đang chuyển đổi dữ liệu...</p>
+        <p style="color: #555;">Đang xử lý tách dữ liệu...</p>
     </div>
 
     <div class="result-container" id="resultContainer">
         <p style="margin: 0; font-weight: bold;">🎉 Thành công!</p>
         <p id="pdfName" style="margin: 5px 0; font-size: 14px;"></p>
-        <a href="#" id="downloadLink" class="btn-download">📥 Tải File PDF Về Máy</a>
+        <a href="#" id="downloadLink" class="btn-download">📥 Tải File PDF Đã Tách</a>
     </div>
 
     <div class="ads-container" style="margin-top: 50px;">
@@ -57,13 +57,13 @@
         document.getElementById('uploadForm').addEventListener('submit', function(e) {
             e.preventDefault(); 
             const formData = new FormData();
-            formData.append('word_file', document.getElementById('wordFile').files[0]);
+            // ĐÃ ĐỔI: Nhận đúng key 'pdf_file' đồng bộ với Flask API
+            formData.append('pdf_file', document.getElementById('pdfFile').files[0]);
 
             document.getElementById('submitBtn').style.display = 'none';
             document.getElementById('resultContainer').style.display = 'none';
             document.getElementById('loaderContainer').style.display = 'block';
 
-            // Gửi lên URL API chính xác của nó
             fetch('/api/gop-pdf', { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
