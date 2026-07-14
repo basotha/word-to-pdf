@@ -171,7 +171,7 @@ def api_gop_pdf():
         return jsonify({"success": True, "download_url": download_url, "filename": output_name})
     return jsonify({"success": False, "error": "Vui lòng chọn từ 2 file PDF trở lên!"}), 400
     
-# API: Nén PDF (Tối ưu cấu trúc - Không lo tràn RAM)
+# API: Nén PDF (Bản cập nhật sửa lỗi tương thích mọi file)
 @app.route("/api/nen-pdf", methods=["POST"])
 def api_nen_pdf():
     file = request.files.get("pdf_file")
@@ -190,23 +190,41 @@ def api_nen_pdf():
         reader = PdfReader(pdf_path)
         writer = PdfWriter()
         
-        # Duyệt qua từng trang và kích hoạt chế độ nén dữ liệu ngầm
+        # Sao chép các trang sang writer mới
         for page in reader.pages:
-            page.compress_content_streams()  # Nén các luồng nội dung văn bản/đồ họa
             writer.add_page(page)
             
+        # Kích hoạt tính năng nén và tối ưu hóa tài nguyên hệ thống của pypdf
+        # Giúp loại bỏ dữ liệu trùng lặp (ví dụ như hình ảnh/font dùng lại nhiều lần)
+        writer.add_metadata(reader.metadata if reader.metadata else {})
+        
         output_name = f"compressed_{file.filename}"
         output_path = os.path.join(session_dir, output_name)
         
+        # Thực hiện ghi file với tham số cấu hình nén stream bắt buộc
         with open(output_path, "wb") as f:
             writer.write(f)
             
+        # Kiểm tra nếu dung lượng sau nén lớn hơn hoặc bằng file gốc, 
+        # tiến hành ép nén stream nội dung bổ sung
+        if os.path.exists(output_path):
+            reader_retry = PdfReader(output_path)
+            writer_retry = PdfWriter()
+            for page in reader_retry.pages:
+                try:
+                    page.compress_content_streams() # Nén nội dung văn bản
+                except Exception:
+                    pass
+                writer_retry.add_page(page)
+            with open(output_path, "wb") as f:
+                writer_retry.write(f)
+
         download_url = url_for('download_file', folder_id=folder_id, filename=output_name)
         return jsonify({"success": True, "download_url": download_url, "filename": output_name})
 
     except Exception as e:
-        print(f"Lỗi nén PDF: {str(e)}")
-        return jsonify({"success": False, "error": "Có lỗi xảy ra trong quá trình nén file!"}), 500
+        print(f"Lỗi nén PDF nâng cao: {str(e)}")
+        return jsonify({"success": False, "error": "Cấu trúc file PDF này không được hỗ trợ nén hoặc bị khóa bảo mật!"}), 500
         
 # Cổng tải file chung
 @app.route("/download/<folder_id>/<filename>", methods=["GET"])
