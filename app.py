@@ -170,6 +170,7 @@ def api_gop_pdf():
         download_url = url_for('download_file', folder_id=folder_id, filename=output_name)
         return jsonify({"success": True, "download_url": download_url, "filename": output_name})
     return jsonify({"success": False, "error": "Vui lòng chọn từ 2 file PDF trở lên!"}), 400
+    
 # API: Nén PDF (Tối ưu cấu trúc - Không lo tràn RAM)
 @app.route("/api/nen-pdf", methods=["POST"])
 def api_nen_pdf():
@@ -206,6 +207,7 @@ def api_nen_pdf():
     except Exception as e:
         print(f"Lỗi nén PDF: {str(e)}")
         return jsonify({"success": False, "error": "Có lỗi xảy ra trong quá trình nén file!"}), 500
+        
 # Cổng tải file chung
 @app.route("/download/<folder_id>/<filename>", methods=["GET"])
 def download_file(folder_id, filename):
