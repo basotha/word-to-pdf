@@ -171,7 +171,7 @@ def api_gop_pdf():
         return jsonify({"success": True, "download_url": download_url, "filename": output_name})
     return jsonify({"success": False, "error": "Vui lòng chọn từ 2 file PDF trở lên!"}), 400
     
-# API: Nén PDF (Bản cập nhật sửa lỗi tương thích mọi file)
+# API: Nén PDF nâng cao bằng cách tối ưu hóa hình ảnh qua LibreOffice
 @app.route("/api/nen-pdf", methods=["POST"])
 def api_nen_pdf():
     file = request.files.get("pdf_file")
@@ -187,44 +187,48 @@ def api_nen_pdf():
         pdf_path = os.path.join(session_dir, file.filename)
         file.save(pdf_path)
         
-        reader = PdfReader(pdf_path)
-        writer = PdfWriter()
-        
-        # Sao chép các trang sang writer mới
-        for page in reader.pages:
-            writer.add_page(page)
-            
-        # Kích hoạt tính năng nén và tối ưu hóa tài nguyên hệ thống của pypdf
-        # Giúp loại bỏ dữ liệu trùng lặp (ví dụ như hình ảnh/font dùng lại nhiều lần)
-        writer.add_metadata(reader.metadata if reader.metadata else {})
-        
+        # Đường xuất file nén tạm thời
         output_name = f"compressed_{file.filename}"
-        output_path = os.path.join(session_dir, output_name)
         
-        # Thực hiện ghi file với tham số cấu hình nén stream bắt buộc
-        with open(output_path, "wb") as f:
-            writer.write(f)
-            
-        # Kiểm tra nếu dung lượng sau nén lớn hơn hoặc bằng file gốc, 
-        # tiến hành ép nén stream nội dung bổ sung
-        if os.path.exists(output_path):
-            reader_retry = PdfReader(output_path)
-            writer_retry = PdfWriter()
-            for page in reader_retry.pages:
+        # Sử dụng LibreOffice để "in lại" PDF với cấu hình giảm chất lượng ảnh xuống 150 DPI (Tiêu chuẩn web)
+        # Giúp nén cực sâu các file chứa nhiều hình ảnh, tài liệu scan
+        cmd = [
+            find_libreoffice(),
+            "--headless",
+            "--convert-to", "pdf:writer_pdf_Export:{\"MaxImageResolution\":{\"type\":\"long\",\"value\":150},\"Quality\":{\"type\":\"long\",\"value\":60}}",
+            "--outdir", session_dir,
+            pdf_path
+        ]
+        
+        # Chạy lệnh nén hệ thống
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=30)
+        
+        # LibreOffice khi convert PDF sang PDF sẽ giữ nguyên tên file gốc ở thư mục đầu ra, 
+        # nên ta cần đổi tên nó thành output_name để không trùng lặp.
+        default_out_path = os.path.join(session_dir, file.filename)
+        final_out_path = os.path.join(session_dir, output_name)
+        
+        if os.path.exists(default_out_path):
+            os.rename(default_out_path, final_out_path)
+        else:
+            # Nếu LibreOffice không xử lý được (file lỗi cấu trúc), ta dùng pypdf làm phương án dự phòng (Fallback)
+            reader = PdfReader(pdf_path)
+            writer = PdfWriter()
+            for page in reader.pages:
                 try:
-                    page.compress_content_streams() # Nén nội dung văn bản
+                    page.compress_content_streams()
                 except Exception:
                     pass
-                writer_retry.add_page(page)
-            with open(output_path, "wb") as f:
-                writer_retry.write(f)
+                writer.add_page(page)
+            with open(final_out_path, "wb") as f:
+                writer.write(f)
 
         download_url = url_for('download_file', folder_id=folder_id, filename=output_name)
         return jsonify({"success": True, "download_url": download_url, "filename": output_name})
 
     except Exception as e:
-        print(f"Lỗi nén PDF nâng cao: {str(e)}")
-        return jsonify({"success": False, "error": "Cấu trúc file PDF này không được hỗ trợ nén hoặc bị khóa bảo mật!"}), 500
+        print(f"Lỗi nén PDF LibreOffice: {str(e)}")
+        return jsonify({"success": False, "error": "Có lỗi xảy ra trong quá trình nén file!"}), 500
         
 # Cổng tải file chung
 @app.route("/download/<folder_id>/<filename>", methods=["GET"])
