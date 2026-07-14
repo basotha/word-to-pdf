@@ -51,6 +51,10 @@ def tool_tach_pdf():
 @app.route("/tool/gop-pdf")
 def tool_gop_pdf():
     return render_template("tools/gop_pdf.html")
+    
+@app.route("/tool/nen-pdf")
+def tool_nen_pdf():
+    return render_template("tools/nen_pdf.html")
 
 
 # ================= 3. LOGIC XỬ LÝ BACKEND (API) =================
@@ -166,7 +170,42 @@ def api_gop_pdf():
         download_url = url_for('download_file', folder_id=folder_id, filename=output_name)
         return jsonify({"success": True, "download_url": download_url, "filename": output_name})
     return jsonify({"success": False, "error": "Vui lòng chọn từ 2 file PDF trở lên!"}), 400
+# API: Nén PDF (Tối ưu cấu trúc - Không lo tràn RAM)
+@app.route("/api/nen-pdf", methods=["POST"])
+def api_nen_pdf():
+    file = request.files.get("pdf_file")
+    
+    if not file or not file.filename.endswith(".pdf"):
+        return jsonify({"success": False, "error": "Định dạng file không hợp lệ!"}), 400
 
+    try:
+        folder_id = uuid.uuid4().hex
+        session_dir = os.path.join(UPLOAD_FOLDER, folder_id)
+        os.makedirs(session_dir, exist_ok=True)
+        
+        pdf_path = os.path.join(session_dir, file.filename)
+        file.save(pdf_path)
+        
+        reader = PdfReader(pdf_path)
+        writer = PdfWriter()
+        
+        # Duyệt qua từng trang và kích hoạt chế độ nén dữ liệu ngầm
+        for page in reader.pages:
+            page.compress_content_streams()  # Nén các luồng nội dung văn bản/đồ họa
+            writer.add_page(page)
+            
+        output_name = f"compressed_{file.filename}"
+        output_path = os.path.join(session_dir, output_name)
+        
+        with open(output_path, "wb") as f:
+            writer.write(f)
+            
+        download_url = url_for('download_file', folder_id=folder_id, filename=output_name)
+        return jsonify({"success": True, "download_url": download_url, "filename": output_name})
+
+    except Exception as e:
+        print(f"Lỗi nén PDF: {str(e)}")
+        return jsonify({"success": False, "error": "Có lỗi xảy ra trong quá trình nén file!"}), 500
 # Cổng tải file chung
 @app.route("/download/<folder_id>/<filename>", methods=["GET"])
 def download_file(folder_id, filename):
