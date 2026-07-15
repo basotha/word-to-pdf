@@ -171,13 +171,25 @@ def api_gop_pdf():
         return jsonify({"success": True, "download_url": download_url, "filename": output_name})
     return jsonify({"success": False, "error": "Vui lòng chọn từ 2 file PDF trở lên!"}), 400
     
-# API: Nén PDF nâng cao bằng cách tối ưu hóa hình ảnh qua LibreOffice
+# API: Nén PDF đa chế độ (Tương thích chuẩn mô hình pdf.io)
 @app.route("/api/nen-pdf", methods=["POST"])
 def api_nen_pdf():
     file = request.files.get("pdf_file")
+    compression_level = request.form.get("level", "medium") # Mặc định là nén tiêu chuẩn
     
     if not file or not file.filename.endswith(".pdf"):
         return jsonify({"success": False, "error": "Định dạng file không hợp lệ!"}), 400
+
+    # Khởi tạo tham số cấu hình nén dựa trên lựa chọn người dùng
+    if compression_level == "high":     # Nén tối đa (Chất lượng thấp hơn)
+        dpi = 90
+        quality = 45
+    elif compression_level == "low":    # Nén nhẹ (Giữ độ nét cao)
+        dpi = 220
+        quality = 75
+    else:                               # Nén tiêu chuẩn (Cân bằng tốt nhất - medium)
+        dpi = 150
+        quality = 60
 
     try:
         folder_id = uuid.uuid4().hex
@@ -187,38 +199,34 @@ def api_nen_pdf():
         pdf_path = os.path.join(session_dir, file.filename)
         file.save(pdf_path)
         
-        # Đường xuất file nén tạm thời
         output_name = f"compressed_{file.filename}"
         
-        # Sử dụng LibreOffice để "in lại" PDF với cấu hình giảm chất lượng ảnh xuống 150 DPI (Tiêu chuẩn web)
-        # Giúp nén cực sâu các file chứa nhiều hình ảnh, tài liệu scan
+        # Cấu hình chuỗi lọc dữ liệu nén động gửi thẳng vào LibreOffice
+        filter_options = f'pdf:writer_pdf_Export:{{"MaxImageResolution":{{"type":"long","value":{dpi}}},"Quality":{{"type":"long","value":{quality}}}}}'
+        
         cmd = [
             find_libreoffice(),
             "--headless",
-            "--convert-to", "pdf:writer_pdf_Export:{\"MaxImageResolution\":{\"type\":\"long\",\"value\":150},\"Quality\":{\"type\":\"long\",\"value\":60}}",
+            "--convert-to", filter_options,
             "--outdir", session_dir,
             pdf_path
         ]
         
-        # Chạy lệnh nén hệ thống
-        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=30)
+        # Chạy lệnh biên dịch ép ảnh hệ thống
+        subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=45, check=True)
         
-        # LibreOffice khi convert PDF sang PDF sẽ giữ nguyên tên file gốc ở thư mục đầu ra, 
-        # nên ta cần đổi tên nó thành output_name để không trùng lặp.
         default_out_path = os.path.join(session_dir, file.filename)
         final_out_path = os.path.join(session_dir, output_name)
         
         if os.path.exists(default_out_path):
             os.rename(default_out_path, final_out_path)
         else:
-            # Nếu LibreOffice không xử lý được (file lỗi cấu trúc), ta dùng pypdf làm phương án dự phòng (Fallback)
+            # Phương án Fallback nếu LibreOffice gặp file mã hóa đặc biệt
             reader = PdfReader(pdf_path)
             writer = PdfWriter()
             for page in reader.pages:
-                try:
-                    page.compress_content_streams()
-                except Exception:
-                    pass
+                try: page.compress_content_streams()
+                except Exception: pass
                 writer.add_page(page)
             with open(final_out_path, "wb") as f:
                 writer.write(f)
@@ -227,8 +235,8 @@ def api_nen_pdf():
         return jsonify({"success": True, "download_url": download_url, "filename": output_name})
 
     except Exception as e:
-        print(f"Lỗi nén PDF LibreOffice: {str(e)}")
-        return jsonify({"success": False, "error": "Có lỗi xảy ra trong quá trình nén file!"}), 500
+        print(f"Lỗi nén đa chế độ: {str(e)}")
+        return jsonify({"success": False, "error": "Có lỗi xảy ra trong quá trình tối ưu file!"}), 500
         
 # Cổng tải file chung
 @app.route("/download/<folder_id>/<filename>", methods=["GET"])
