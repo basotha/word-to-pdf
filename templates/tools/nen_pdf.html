@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nén File PDF Trực Tuyến - Giảm Dung Lượng File Miễn Phí</title>
+    <title>Nén File PDF Trực Tuyến - Tùy Chọn Mức Độ Nén</title>
     <style>
         body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; text-align: center; background: #fafafa; }
         .upload-box { border: 2px dashed #ccc; padding: 30px; border-radius: 10px; background: #f9f9f9; cursor: pointer; }
@@ -12,6 +12,15 @@
         .ads-container { margin: 20px 0; background: #eee; padding: 10px; min-height: 90px; }
         .back-home { display: inline-block; margin-bottom: 20px; color: #ff4b4b; text-decoration: none; font-weight: bold; }
         
+        /* Cấu trúc tùy chọn mức độ nén giống pdf.io */
+        .compression-options { display: flex; justify-content: space-between; gap: 10px; margin: 20px 0; text-align: left; }
+        .option-card { flex: 1; border: 2px solid #e1e1e1; border-radius: 8px; padding: 12px; background: white; cursor: pointer; transition: 0.2s; position: relative; }
+        .option-card:hover { border-color: #ff4b4b; }
+        .option-card input { position: absolute; top: 12px; right: 12px; cursor: pointer; }
+        .option-title { font-weight: bold; font-size: 14px; margin-bottom: 5px; color: #111; }
+        .option-desc { font-size: 12px; color: #666; line-height: 1.3; }
+        .option-card.active { border-color: #ff4b4b; background: rgba(255, 75, 75, 0.03); }
+
         .loader-container { display: none; margin: 20px 0; }
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #ff4b4b; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -27,26 +36,47 @@
 
     <a href="/" class="back-home">⬅️ Quay lại Trang chủ Công cụ</a>
 
-    <h1>📉 Tối ưu & Nén file PDF</h1>
-    <p>Giảm dung lượng file PDF của bạn bằng cách tối ưu hóa cấu trúc dữ liệu bên trong.</p>
+    <h1>📉 Nén file PDF chuyên nghiệp</h1>
+    <p>Chọn file và cấu hình mức độ nén phù hợp để tối ưu dung lượng lưu trữ.</p>
 
     <form id="uploadForm" enctype="multipart/form-data">
         <div class="upload-box">
             <input type="file" id="pdfFile" name="pdf_file" accept=".pdf" required><br><br>
             <p>Chọn hoặc kéo thả file .pdf cần nén vào đây</p>
         </div>
+
+        <div class="compression-options">
+            <div class="option-card active" onclick="selectOption(this)">
+                <input type="radio" name="compression_level" value="medium" checked>
+                <div class="option-title">Nén tiêu chuẩn</div>
+                <div class="option-desc">Tối ưu hoàn hảo. Cân bằng tuyệt đối giữa dung lượng và chất lượng ảnh (150 DPI).</div>
+            </div>
+            
+            <div class="option-card" onclick="selectOption(this)">
+                <input type="radio" name="compression_level" value="high">
+                <div class="option-title">Nén tối đa</div>
+                <div class="option-desc">Dung lượng nhỏ nhất. Chất lượng hình ảnh bị giảm nhẹ để dễ chia sẻ (90 DPI).</div>
+            </div>
+
+            <div class="option-card" onclick="selectOption(this)">
+                <input type="radio" name="compression_level" value="low">
+                <div class="option-title">Nén nhẹ</div>
+                <div class="option-desc">Chất lượng cao nhất. Chỉ tối ưu cấu trúc file, giữ nguyên độ nét của ảnh (220 DPI).</div>
+            </div>
+        </div>
+
         <button type="submit" class="btn" id="submitBtn">🚀 Bắt Đầu Nén File</button>
     </form>
 
     <div class="loader-container" id="loaderContainer">
         <div class="loader"></div>
-        <p style="color: #555;">Hệ thống đang tiến hành tối ưu và nén file PDF...</p>
+        <p style="color: #555;">Hệ thống đang chạy thuật toán tối ưu hóa hình ảnh...</p>
     </div>
 
     <div class="result-container" id="resultContainer">
         <p style="margin: 0; font-weight: bold;">🎉 Nén thành công!</p>
         <p id="pdfName" style="margin: 5px 0; font-size: 14px; color: #333;"></p>
-        <a href="#" id="downloadLink" class="btn-download">📥 Tải File PDF Đã Nén Về Máy</a>
+        <a href="#" id="downloadLink" class="btn-download">📥 Tải File PDF Đã Nén</a>
     </div>
 
     <div class="ads-container" style="margin-top: 50px;">
@@ -54,17 +84,27 @@
     </div>
 
     <script>
+        // Hiệu ứng active khi bấm chọn Card mức độ nén
+        function selectOption(element) {
+            document.querySelectorAll('.option-card').forEach(card => card.classList.remove('active'));
+            element.classList.add('active');
+            element.querySelector('input[type="radio"]').checked = true;
+        }
+
         document.getElementById('uploadForm').addEventListener('submit', function(e) {
             e.preventDefault(); 
             
             const formData = new FormData();
             formData.append('pdf_file', document.getElementById('pdfFile').files[0]);
+            
+            // Lấy giá trị cấu hình nén đã chọn
+            const selectedLevel = document.querySelector('input[name="compression_level"]:checked').value;
+            formData.append('level', selectedLevel);
 
             document.getElementById('submitBtn').style.display = 'none';
             document.getElementById('resultContainer').style.display = 'none';
             document.getElementById('loaderContainer').style.display = 'block';
 
-            // Gọi API nén file PDF đã cấu hình ở Backend app.py
             fetch('/api/nen-pdf', { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
